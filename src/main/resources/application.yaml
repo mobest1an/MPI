@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: MPI
+  jpa:
+    generate-ddl: true
+
+private:
+  key:
+    filename: "private_key.der"
+public:
+  key:
+    filename: "public_key.der"
