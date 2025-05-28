@@ -1,12 +1,13 @@
 package com.iverpa.mpi.service;
 
-import com.iverpa.mpi.dao.UserDetailsServiceImpl;
 import com.iverpa.mpi.controller.dto.requests.LoginRequest;
 import com.iverpa.mpi.controller.dto.requests.RegisterRequest;
 import com.iverpa.mpi.controller.dto.responses.LoginResponse;
+import com.iverpa.mpi.dao.UserDetailsServiceImpl;
 import com.iverpa.mpi.model.Role;
 import com.iverpa.mpi.model.UserDetailsImpl;
 import com.iverpa.mpi.security.JwtUtils;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,11 @@ public class AuthService {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
+
+    @PostConstruct
+    public void init() {
+        System.out.println(passwordEncoder.encode("commissar"));
+    }
 
     public LoginResponse login(LoginRequest request) throws Exception {
         try {

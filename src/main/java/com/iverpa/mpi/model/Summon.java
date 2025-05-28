@@ -17,4 +17,5 @@ public class Summon {
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
+    private Boolean commissarSummoned;
 }

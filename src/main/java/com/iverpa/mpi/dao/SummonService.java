@@ -14,4 +14,9 @@ public class SummonService {
     public Summon findSummonByUserId(Long userId) {
         return summonRepository.findSummonByUserId(userId).orElseThrow();
     }
+
+    public void updateSummonStatus(Long userId, Boolean status) {
+        Summon summon = summonRepository.findSummonByUserId(userId).orElseThrow();
+        summon.setCommissarSummoned(status);
+    }
 }
