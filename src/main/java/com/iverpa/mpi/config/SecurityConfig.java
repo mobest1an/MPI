@@ -4,6 +4,7 @@ import com.iverpa.mpi.security.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,11 +39,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry ->
                         {
+                            registry.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                            registry.requestMatchers("/api/v1/auth/**").permitAll();
+                            registry.requestMatchers("/error").permitAll();
                             registry.requestMatchers("/api/v1/recruit/**").hasAuthority("recruit");
                             registry.requestMatchers("/api/v1/escort/**").hasAuthority("escort");
                             registry.requestMatchers("/api/v1/commissar/**").hasAuthority("commissar");
                             registry.requestMatchers("/api/v1/admin/**").hasAuthority("admin");
-                            registry.requestMatchers("/api/v1/auth/**").permitAll();
 
                             registry.anyRequest().denyAll();
                         }

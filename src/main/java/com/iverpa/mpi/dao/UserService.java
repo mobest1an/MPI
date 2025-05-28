@@ -1,40 +1,26 @@
-package com.iverpa.mpi.service;
+package com.iverpa.mpi.dao;
 
 import com.iverpa.mpi.model.Role;
 import com.iverpa.mpi.model.User;
-import com.iverpa.mpi.repository.UserRepository;
-import jakarta.annotation.PostConstruct;
+import com.iverpa.mpi.dao.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
-
-import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    @PostConstruct
-    public void initAdminUser() {
-        if (!userRepository.existsByUsername("admin")) {
-            var admin = new User(
-                    0L,
-                    "admin",
-                    passwordEncoder.encode("admin"),
-                    Set.of(Role.ADMIN)
-            );
-            userRepository.save(admin);
-        }
-    }
 
     public User findByUsername(String username) {
         return userRepository.findByUsername(username).orElseThrow(
                 () -> new UsernameNotFoundException("User not found: " + username)
         );
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
     }
 
     public User addRole(String username, Role role) {

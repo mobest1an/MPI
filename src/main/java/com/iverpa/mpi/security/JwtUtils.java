@@ -3,6 +3,7 @@ package com.iverpa.mpi.security;
 import com.iverpa.mpi.model.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
@@ -26,12 +27,13 @@ public class JwtUtils {
     @Value("${jwt.expiration-time:1800000}")
     private Long expirationTime;
 
-    private final PrivateKey privateKey;
+    private PrivateKey privateKey;
 
-    public JwtUtils() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    @PostConstruct
+    public void init() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] key = Files.readAllBytes(Paths.get(privateKeyFileName));
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(key);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(key);
         privateKey = keyFactory.generatePrivate(keySpec);
     }
 

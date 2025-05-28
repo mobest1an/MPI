@@ -1,4 +1,4 @@
-package com.iverpa.mpi.dto.requests;
+package com.iverpa.mpi.controller.dto.requests;
 
 public record LoginRequest(String username, String password) {
 }

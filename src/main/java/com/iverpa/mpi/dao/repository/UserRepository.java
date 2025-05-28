@@ -1,4 +1,4 @@
-package com.iverpa.mpi.repository;
+package com.iverpa.mpi.dao.repository;
 
 import com.iverpa.mpi.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

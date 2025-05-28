@@ -3,6 +3,11 @@ spring:
     name: MPI
   jpa:
     generate-ddl: true
+  datasource:
+    url: jdbc:postgresql://localhost:54320/mpi
+    username: mpi
+    password: mpi
+    driver-class-name: org.postgresql.Driver
 
 private:
   key:
@@ -10,3 +15,10 @@ private:
 public:
   key:
     filename: "public_key.der"
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
