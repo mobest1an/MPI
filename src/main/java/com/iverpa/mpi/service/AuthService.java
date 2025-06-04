@@ -26,7 +26,7 @@ public class AuthService {
 
     @PostConstruct
     public void init() {
-        System.out.println(passwordEncoder.encode("commissar"));
+        System.out.println(passwordEncoder.encode("escort"));
     }
 
     public LoginResponse login(LoginRequest request) throws Exception {

@@ -26,6 +26,6 @@ public class CommissarElectronicQueueController {
     @PostMapping("/delete")
     public void deleteFromQueue(@RequestBody DeleteFromQueueRequest request) {
         User user = userService.findByUsername(request.username());
-        electronicQueueService.delete(user);
+        electronicQueueService.remove(user);
     }
 }

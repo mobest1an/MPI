@@ -1,44 +1,34 @@
 package com.iverpa.mpi.service;
 
 import com.iverpa.mpi.controller.dto.responses.QueueViewResponse;
-import com.iverpa.mpi.dao.SummonService;
 import com.iverpa.mpi.model.User;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
-import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
+/**
+ * @author erik.karapetyan
+ */
 @Service
 @RequiredArgsConstructor
-public class ElectronicQueueService {
+public class WaitingRoomService {
 
-    private final SummonService summonService;
     private final ConcurrentLinkedQueue<User> queue = new ConcurrentLinkedQueue<>();
 
-    @SneakyThrows
-    public void join(User user) {
-        try {
-            summonService.findSummonByUserId(user.getId());
-        } catch (NoSuchElementException e) {
-            throw new IllegalAccessException("Cannot join queue without summon");
-        }
+    public void send(User user) {
         if (!queue.contains(user)) {
             queue.add(user);
         }
     }
 
-    @Transactional
-    public void remove(User user) {
-        summonService.updateSummonStatus(user.getId(), true);
-        queue.remove(user);
+    public void remove() {
+        queue.clear();
     }
 
-    public Queue<QueueViewResponse> getQueue() {
+    public Queue<QueueViewResponse> getWaitingRoom() {
         return queue.stream().map(
                 QueueViewResponse::new
         ).collect(Collectors.toCollection(ConcurrentLinkedQueue::new));

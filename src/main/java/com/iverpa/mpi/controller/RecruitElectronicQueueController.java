@@ -1,6 +1,6 @@
 package com.iverpa.mpi.controller;
 
-import com.iverpa.mpi.controller.dto.requests.RecruitRequest;
+import com.iverpa.mpi.controller.dto.requests.JoinRecruitRequest;
 import com.iverpa.mpi.dao.SummonService;
 import com.iverpa.mpi.dao.UserService;
 import com.iverpa.mpi.model.Summon;
@@ -19,7 +19,7 @@ public class RecruitElectronicQueueController {
     private final SummonService summonService;
 
     @PostMapping("/join")
-    public void joinRecruit(@RequestBody RecruitRequest request) {
+    public void joinRecruit(@RequestBody JoinRecruitRequest request) {
         User user = userService.findByUsername(request.username());
         electronicQueueService.join(user);
     }
