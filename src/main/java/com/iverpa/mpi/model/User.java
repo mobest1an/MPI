@@ -27,4 +27,5 @@ public class User {
     @Column(name = "name")
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;
+    private String militaryBranch;
 }

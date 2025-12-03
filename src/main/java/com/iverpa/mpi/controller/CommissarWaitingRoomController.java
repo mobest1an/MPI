@@ -26,6 +26,12 @@ public class CommissarWaitingRoomController {
         waitingRoomService.send(user);
     }
 
+    @GetMapping("/exists/{username}")
+    public Boolean userExistsInWaitingRoom(@PathVariable String username) {
+        User user = userService.findByUsername(username);
+        return waitingRoomService.exists(user);
+    }
+
     @GetMapping("/summoned")
     public List<QueueViewResponse> getSummonedUsers() {
         return summonService.findAllByCommissarSummoned();
