@@ -24,6 +24,8 @@ public class CommissarWaitingRoomController {
     public void sendRecruitToWaitingRoom(@RequestBody JoinRecruitRequest request) {
         User user = userService.findByUsername(request.username());
         waitingRoomService.send(user);
+        user.setMilitaryBranch(request.army());
+        userService.save(user);
     }
 
     @GetMapping("/exists/{username}")

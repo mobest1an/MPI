@@ -43,14 +43,16 @@ public class UserDetailsImpl implements UserDetails {
                     id,
                     username,
                     password,
-                    roles
+                    roles,
+                    null
             );
         } else {
             return new User(
                     null,
                     username,
                     password,
-                    roles
+                    roles,
+                    null
             );
         }
     }
