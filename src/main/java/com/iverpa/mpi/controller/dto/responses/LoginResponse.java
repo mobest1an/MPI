@@ -1,5 +1,7 @@
 package com.iverpa.mpi.controller.dto.responses;
 
-public record LoginResponse(String token) {
+import java.util.Set;
+
+public record LoginResponse(String token, Set<String> roles) {
 
 }

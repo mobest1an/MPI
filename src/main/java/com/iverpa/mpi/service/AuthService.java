@@ -43,7 +43,10 @@ public class AuthService {
 
         UserDetailsImpl user = userDetailsService.loadUserByUsername(request.username());
         String token = jwtUtils.generateToken(user.getUsername(), user.getRoles());
-        return new LoginResponse(token);
+        Set<String> roleNames = user.getRoles().stream()
+                .map(Enum::name)
+                .collect(java.util.stream.Collectors.toSet());
+        return new LoginResponse(token, roleNames);
     }
 
     public void register(RegisterRequest request) {
