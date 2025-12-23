@@ -27,6 +27,6 @@ public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return authorizedUser.username();
+        return authorizedUser;
     }
 }

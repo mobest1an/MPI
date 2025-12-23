@@ -14,8 +14,18 @@ public class Summon {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @OneToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    private Boolean commissarSummoned;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RecruitStatus status = RecruitStatus.NOT_STARTED;
+
+    private String militaryBranch;
+
+    @ManyToOne
+    @JoinColumn(name = "convoy_id")
+    private Convoy convoy;
 }

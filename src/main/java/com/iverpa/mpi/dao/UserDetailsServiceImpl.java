@@ -1,5 +1,6 @@
 package com.iverpa.mpi.dao;
 
+import com.iverpa.mpi.model.User;
 import com.iverpa.mpi.model.UserDetailsImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,12 +21,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new UserDetailsImpl(user.getUsername(), user.getPassword(), user.getRoles());
     }
 
-    public void save(UserDetailsImpl userDetails) {
+    public User save(UserDetailsImpl userDetails) {
         var user = userDetails.toEntity(null);
         if (userService.existsByUsername(user.getUsername())) {
             throw new IllegalArgumentException("Username is already exists");
         } else {
-            userService.save(user);
+            return userService.save(user);
         }
     }
 }

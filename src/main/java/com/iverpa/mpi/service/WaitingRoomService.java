@@ -1,40 +1,58 @@
 package com.iverpa.mpi.service;
 
-import com.iverpa.mpi.controller.dto.responses.QueueViewResponse;
+import com.iverpa.mpi.controller.dto.responses.WaitingRoomResponse;
+import com.iverpa.mpi.dao.SummonService;
+import com.iverpa.mpi.model.RecruitStatus;
+import com.iverpa.mpi.model.Summon;
 import com.iverpa.mpi.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
+import java.util.List;
 
-/**
- * @author erik.karapetyan
- */
 @Service
 @RequiredArgsConstructor
 public class WaitingRoomService {
 
-    private final ConcurrentLinkedQueue<User> queue = new ConcurrentLinkedQueue<>();
+    private final SummonService summonService;
 
-    public void send(User user) {
-        if (!queue.contains(user)) {
-            queue.add(user);
+    /**
+     * Комиссар отправляет призывника в зал ожидания конвоирования
+     */
+    @Transactional
+    public void sendToWaitingRoom(User user, String militaryBranch) {
+        Summon summon = summonService.findByUserId(user.getId());
+        
+        if (summon.getStatus() != RecruitStatus.SUMMONED) {
+            throw new IllegalStateException("Призывник не вызван комиссаром");
         }
+        
+        summon.setMilitaryBranch(militaryBranch);
+        summon.setStatus(RecruitStatus.WAITING_ESCORT);
+        summonService.save(summon);
     }
 
-    public Boolean exists(User user) {
-        return queue.contains(user);
+    /**
+     * Проверить, находится ли призывник в зале ожидания или дальше
+     */
+    public boolean exists(User user) {
+        Summon summon = summonService.findByUserId(user.getId());
+        return summon.getStatus() == RecruitStatus.WAITING_ESCORT 
+            || summon.getStatus() == RecruitStatus.IN_CONVOY
+            || summon.getStatus() == RecruitStatus.DONE;
     }
 
-    public void remove() {
-        queue.clear();
-    }
-
-    public Queue<QueueViewResponse> getWaitingRoom() {
-        return queue.stream().map(
-                QueueViewResponse::new
-        ).collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
+    /**
+     * Получить список призывников в зале ожидания конвоирования
+     */
+    public List<WaitingRoomResponse> getWaitingRoom() {
+        return summonService.findAllByStatus(RecruitStatus.WAITING_ESCORT).stream()
+                .map(summon -> new WaitingRoomResponse(
+                        summon.getId(),
+                        summon.getUser().getUsername(),
+                        summon.getMilitaryBranch()
+                ))
+                .toList();
     }
 }

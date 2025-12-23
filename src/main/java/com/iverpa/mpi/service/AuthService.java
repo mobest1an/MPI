@@ -4,15 +4,19 @@ import com.iverpa.mpi.controller.dto.requests.LoginRequest;
 import com.iverpa.mpi.controller.dto.requests.RegisterRequest;
 import com.iverpa.mpi.controller.dto.responses.LoginResponse;
 import com.iverpa.mpi.dao.UserDetailsServiceImpl;
+import com.iverpa.mpi.dao.repository.SummonRepository;
+import com.iverpa.mpi.model.RecruitStatus;
 import com.iverpa.mpi.model.Role;
+import com.iverpa.mpi.model.Summon;
+import com.iverpa.mpi.model.User;
 import com.iverpa.mpi.model.UserDetailsImpl;
 import com.iverpa.mpi.security.JwtUtils;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -23,11 +27,7 @@ public class AuthService {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
-
-    @PostConstruct
-    public void init() {
-        System.out.println(passwordEncoder.encode("escort"));
-    }
+    private final SummonRepository summonRepository;
 
     public LoginResponse login(LoginRequest request) throws Exception {
         try {
@@ -49,13 +49,20 @@ public class AuthService {
         return new LoginResponse(token, roleNames);
     }
 
+    @Transactional
     public void register(RegisterRequest request) {
-        userDetailsService.save(
+        User user = userDetailsService.save(
                 new UserDetailsImpl(
                         request.username(),
                         passwordEncoder.encode(request.password()),
                         Set.of(Role.RECRUIT)
                 )
         );
+
+        // Создаём запись Summon для призывника
+        Summon summon = new Summon();
+        summon.setUser(user);
+        summon.setStatus(RecruitStatus.NOT_STARTED);
+        summonRepository.save(summon);
     }
 }
