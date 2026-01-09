@@ -3,6 +3,7 @@ package com.iverpa.mpi.service;
 import com.iverpa.mpi.controller.dto.responses.ConvoyResponse;
 import com.iverpa.mpi.controller.dto.responses.WaitingRoomResponse;
 import com.iverpa.mpi.dao.SummonService;
+import com.iverpa.mpi.dao.repository.ComplaintRepository;
 import com.iverpa.mpi.dao.repository.ConvoyRepository;
 import com.iverpa.mpi.model.Convoy;
 import com.iverpa.mpi.model.RecruitStatus;
@@ -21,6 +22,7 @@ public class ConvoyService {
 
     private final ConvoyRepository convoyRepository;
     private final SummonService summonService;
+    private final ComplaintRepository complaintRepository;
 
     /**
      * Получить активный конвой конвоира
@@ -108,7 +110,19 @@ public class ConvoyService {
         }
         summonService.saveAll(summons);
 
+        // Удаляем все жалобы на конвой
+        complaintRepository.deleteAllByConvoy(convoy);
+
         // Удаляем конвой
         convoyRepository.delete(convoy);
+    }
+
+    /**
+     * Получить количество жалоб на конвой
+     */
+    public int getComplaintsCount(User escort) {
+        return convoyRepository.findByEscort(escort)
+                .map(complaintRepository::countByConvoy)
+                .orElse(0);
     }
 }

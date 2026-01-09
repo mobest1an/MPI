@@ -7,7 +7,8 @@ public enum Role {
     RECRUIT("recruit"),
     ESCORT("escort"),
     COMMISSAR("commissar"),
-    ADMIN("admin");
+    ADMIN("admin"),
+    MILITARY_POLICE("military_police");
 
     private final String name;
 

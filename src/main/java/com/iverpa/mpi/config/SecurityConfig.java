@@ -41,11 +41,13 @@ public class SecurityConfig {
                         {
                             registry.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                             registry.requestMatchers("/api/v1/auth/**").permitAll();
+                            registry.requestMatchers("/api/v1/public/**").permitAll();
                             registry.requestMatchers("/error").permitAll();
                             registry.requestMatchers("/api/v1/recruit/**").hasAuthority("recruit");
                             registry.requestMatchers("/api/v1/escort/**").hasAuthority("escort");
                             registry.requestMatchers("/api/v1/commissar/**").hasAuthority("commissar");
                             registry.requestMatchers("/api/v1/admin/**").hasAuthority("admin");
+                            registry.requestMatchers("/api/v1/military-police/**").hasAuthority("military_police");
 
                             registry.anyRequest().denyAll();
                         }

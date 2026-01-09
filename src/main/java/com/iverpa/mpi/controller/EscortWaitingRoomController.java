@@ -69,4 +69,13 @@ public class EscortWaitingRoomController {
         User escort = userService.findByUsername(authorizedUser.username());
         convoyService.dismissConvoy(escort);
     }
+
+    /**
+     * Получить количество жалоб на конвой
+     */
+    @GetMapping("/convoy/complaints-count")
+    public int getComplaintsCount(@AuthenticationPrincipal AuthorizedUser authorizedUser) {
+        User escort = userService.findByUsername(authorizedUser.username());
+        return convoyService.getComplaintsCount(escort);
+    }
 }
