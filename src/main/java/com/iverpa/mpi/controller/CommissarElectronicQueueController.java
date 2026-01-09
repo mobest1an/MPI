@@ -59,4 +59,13 @@ public class CommissarElectronicQueueController {
     public boolean hasSummonedRecruit() {
         return electronicQueueService.hasSummonedRecruit();
     }
+
+    /**
+     * Отклонить призывника (вернуть в начало)
+     */
+    @PostMapping("/reject")
+    public void rejectRecruit(@RequestBody DeleteFromQueueRequest request) {
+        User user = userService.findByUsername(request.username());
+        electronicQueueService.reject(user);
+    }
 }

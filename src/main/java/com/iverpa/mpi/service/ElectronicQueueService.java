@@ -79,4 +79,42 @@ public class ElectronicQueueService {
         // Комиссар готов, если призывник вызван (SUMMONED)
         return summon.getStatus() == RecruitStatus.SUMMONED;
     }
+
+    /**
+     * Призывник выходит из очереди
+     */
+    @Transactional
+    public void leave(User user) {
+        Summon summon = summonService.findByUserId(user.getId());
+
+        if (summon.getStatus() != RecruitStatus.IN_QUEUE) {
+            throw new IllegalStateException("Призывник не в очереди");
+        }
+
+        summon.setStatus(RecruitStatus.NOT_STARTED);
+        summonService.save(summon);
+    }
+
+    /**
+     * Комиссар отклоняет призывника (возвращает в начало)
+     */
+    @Transactional
+    public void reject(User user) {
+        Summon summon = summonService.findByUserId(user.getId());
+
+        if (summon.getStatus() != RecruitStatus.SUMMONED) {
+            throw new IllegalStateException("Призывник не вызван комиссаром");
+        }
+
+        summon.setStatus(RecruitStatus.NOT_STARTED);
+        summon.setMilitaryBranch(null);
+        summonService.save(summon);
+    }
+
+    /**
+     * Получить статус призывника
+     */
+    public Summon getRecruitSummon(User user) {
+        return summonService.findByUserId(user.getId());
+    }
 }
