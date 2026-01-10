@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry ->
                         {
                             registry.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                            registry.requestMatchers("/actuator/prometheus").permitAll();
+                            registry.requestMatchers("/prometheus/health").permitAll();
                             registry.requestMatchers("/api/v1/auth/**").permitAll();
                             registry.requestMatchers("/api/v1/public/**").permitAll();
                             registry.requestMatchers("/error").permitAll();
