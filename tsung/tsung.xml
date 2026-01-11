@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tsung SYSTEM "/usr/share/tsung/tsung-1.0.dtd">
+
+<tsung loglevel="debug" version="1.0">
+
+    <clients>
+        <client host="localhost" use_controller_vm="true" />
+    </clients>
+
+    <!-- Spring app on host -->
+    <servers>
+        <server host="host.docker.internal" port="8080" type="tcp" />
+    </servers>
+
+    <load>
+        <!-- 10 users, started at 1 user/sec (takes ~10s), then they keep running -->
+        <arrivalphase phase="1" duration="150" unit="second">
+            <users maxnumber="1000" arrivalrate="1" unit="second" />
+        </arrivalphase>
+    </load>
+
+    <options>
+        <option name="file_server" value="/root/.tsung/users" id="users"/>
+    </options>
+
+    <sessions>
+        <session name="recruit-queue" probability="100" type="ts_http">
+
+            <!-- one (username,password) per virtual user -->
+            <setdynvars sourcetype="file" fileid="users" delimiter="," order="iter">
+                <var name="username"/>
+                <var name="password"/>
+            </setdynvars>
+
+            <!-- 0) REGISTER -->
+            <request subst="true">
+                <http url="/api/v1/auth/register" method="POST" version="1.1"
+                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
+
+            <thinktime value="200" random="true" />
+
+            <!-- 1) LOGIN -->
+            <request subst="true">
+                <dyn_variable name="jwt"
+                              re="&quot;token&quot;[[:space:]]*:[[:space:]]*&quot;([^&quot;]+)&quot;"/>
+                <http url="/api/v1/auth/login" method="POST" version="1.1"
+                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
+
+            <thinktime value="200" random="true" />
+
+            <!-- 2) JOIN QUEUE -->
+            <request subst="true">
+                <http method="POST"
+                      url="/api/v1/recruit/queue/join"
+                      version="1.1"
+                      contents='{"username":"%%_username%%"}'
+                      content_type="application/json">
+                    <http_header name="Accept" value="application/json" />
+                    <http_header name="Authorization" value="Bearer %%_jwt%%" />
+                </http>
+            </request>
+
+            <thinktime value="200" random="true" />
+
+            <!-- 3) CHECK READY -->
+            <request subst="true">
+                <http method="GET"
+                      url="/api/v1/recruit/queue/ready/%%_username%%"
+                      version="1.1">
+                    <http_header name="Accept" value="application/json" />
+                    <http_header name="Authorization" value="Bearer %%_jwt%%" />
+                </http>
+            </request>
+
+            <thinktime value="200" random="true" />
+
+            <!-- 4) LEAVE QUEUE -->
+            <request subst="true">
+                <http method="POST"
+                      url="/api/v1/recruit/queue/leave"
+                      version="1.1">
+                    <http_header name="Authorization" value="Bearer %%_jwt%%" />
+                </http>
+            </request>
+
+        </session>
+    </sessions>
+
+</tsung>

@@ -49,3 +49,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+
+  tsung:
+    build: ./tsung
+    container_name: tsung
+    volumes:
+      - ./tsung/tsung.xml:/work/tsung.xml:ro
+      - ./tsung/users.csv:/root/.tsung/users:ro
+      - ./tsung/results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["tsung", "-f", "/work/tsung.xml", "-l", "/results", "start"]
