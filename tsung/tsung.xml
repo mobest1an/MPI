@@ -4,7 +4,7 @@
 <tsung loglevel="debug" version="1.0">
 
     <clients>
-        <client host="localhost" use_controller_vm="true" />
+        <client host="localhost" use_controller_vm="true" maxusers="1000" />
     </clients>
 
     <!-- Spring app on host -->
@@ -13,9 +13,8 @@
     </servers>
 
     <load>
-        <!-- 10 users, started at 1 user/sec (takes ~10s), then they keep running -->
-        <arrivalphase phase="1" duration="150" unit="second">
-            <users maxnumber="1000" arrivalrate="1" unit="second" />
+        <arrivalphase phase="1" duration="10" unit="second">
+            <users maxnumber="1000" arrivalrate="100" unit="second"/>
         </arrivalphase>
     </load>
 
@@ -41,7 +40,7 @@
                 </http>
             </request>
 
-            <thinktime value="200" random="true" />
+<!--            <thinktime value="200" random="true" />-->
 
             <!-- 1) LOGIN -->
             <request subst="true">
@@ -54,7 +53,7 @@
                 </http>
             </request>
 
-            <thinktime value="200" random="true" />
+<!--            <thinktime value="200" random="true" />-->
 
             <!-- 2) JOIN QUEUE -->
             <request subst="true">
@@ -68,7 +67,7 @@
                 </http>
             </request>
 
-            <thinktime value="200" random="true" />
+<!--            <thinktime value="200" random="true" />-->
 
             <!-- 3) CHECK READY -->
             <request subst="true">
@@ -80,7 +79,7 @@
                 </http>
             </request>
 
-            <thinktime value="200" random="true" />
+<!--            <thinktime value="200" random="true" />-->
 
             <!-- 4) LEAVE QUEUE -->
             <request subst="true">

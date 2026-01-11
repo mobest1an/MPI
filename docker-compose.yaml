@@ -60,3 +60,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: ["tsung", "-f", "/work/tsung.xml", "-l", "/results", "start"]
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
