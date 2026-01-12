@@ -1,5 +1,6 @@
 package com.iverpa.mpi.dao;
 
+import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.dao.repository.SummonRepository;
 import com.iverpa.mpi.model.Convoy;
 import com.iverpa.mpi.model.RecruitStatus;
@@ -34,20 +35,24 @@ public class SummonService {
         return result;
     }
 
+    @Passed
     public List<Summon> findAllByConvoy(Convoy convoy) {
         return summonRepository.findAllByConvoy(convoy);
     }
 
+    @Passed
     public List<Summon> findAllByIdsAndStatus(List<Long> ids, RecruitStatus status) {
         return summonRepository.findAllByIdInAndStatus(ids, status);
     }
 
+    @Passed
     public Summon updateStatus(Long userId, RecruitStatus status) {
         Summon summon = findByUserId(userId);
         summon.setStatus(status);
         return summonRepository.save(summon);
     }
 
+    @Passed
     public Summon updateStatus(Summon summon, RecruitStatus status) {
         summon.setStatus(status);
         return summonRepository.save(summon);
@@ -57,6 +62,7 @@ public class SummonService {
         return summonRepository.save(summon);
     }
 
+    @Passed
     public void saveAll(List<Summon> summons) {
         summonRepository.saveAll(summons);
     }

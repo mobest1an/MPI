@@ -1,5 +1,6 @@
 package com.iverpa.mpi.model;
 
+import com.iverpa.mpi.config.Passed;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,27 +17,32 @@ public class UserDetailsImpl implements UserDetails {
     @Getter
     private final Set<Role> roles;
 
+    @Passed
     public UserDetailsImpl(String username, String password, Set<Role> roles) {
         this.username = username;
         this.password = password;
         this.roles = roles;
     }
 
+    @Passed
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
     }
 
+    @Passed
     @Override
     public String getPassword() {
         return password;
     }
 
+    @Passed
     @Override
     public String getUsername() {
         return username;
     }
 
+    @Passed
     public User toEntity(Long id) {
         if (id != null) {
             return new User(

@@ -1,5 +1,6 @@
 package com.iverpa.mpi.service;
 
+import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.controller.dto.responses.ConvoyResponse;
 import com.iverpa.mpi.controller.dto.responses.WaitingRoomResponse;
 import com.iverpa.mpi.dao.SummonService;
@@ -27,6 +28,7 @@ public class ConvoyService {
     /**
      * Получить активный конвой конвоира
      */
+    @Passed
     public Optional<ConvoyResponse> getActiveConvoy(User escort) {
         return convoyRepository.findByEscort(escort)
                 .map(convoy -> {
@@ -52,6 +54,7 @@ public class ConvoyService {
      * Создать конвой из выбранных призывников
      * Транзакционно проверяет статусы и создаёт конвой
      */
+    @Passed
     @Transactional
     public ConvoyResponse createConvoy(User escort, List<Long> summonIds) {
         // Проверяем, что у конвоира нет активного конвоя
