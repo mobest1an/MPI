@@ -1,6 +1,5 @@
 package com.iverpa.mpi.controller;
 
-import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.controller.dto.responses.ActiveComplaintResponse;
 import com.iverpa.mpi.controller.dto.responses.ComplaintGroupResponse;
 import com.iverpa.mpi.dao.SummonService;
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/military-police")
 @RequiredArgsConstructor
-@Passed
 public class MilitaryPoliceController {
 
     private final ComplaintService complaintService;

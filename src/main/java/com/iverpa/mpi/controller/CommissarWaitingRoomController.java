@@ -1,6 +1,5 @@
 package com.iverpa.mpi.controller;
 
-import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.controller.dto.requests.SendToWaitingRoomRequest;
 import com.iverpa.mpi.dao.UserService;
 import com.iverpa.mpi.model.User;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/commissar/room")
 @RequiredArgsConstructor
-@Passed
 public class CommissarWaitingRoomController {
 
     private final WaitingRoomService waitingRoomService;

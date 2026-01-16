@@ -1,6 +1,5 @@
 package com.iverpa.mpi.controller;
 
-import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.controller.dto.requests.DeleteFromQueueRequest;
 import com.iverpa.mpi.controller.dto.responses.QueueViewResponse;
 import com.iverpa.mpi.controller.dto.responses.SummonedRecruitResponse;
@@ -41,7 +40,6 @@ public class CommissarElectronicQueueController {
     /**
      * Получить текущего вызванного призывника
      */
-    @Passed
     @GetMapping("/current")
     public SummonedRecruitResponse getCurrentSummoned() {
         Summon summon = electronicQueueService.getCurrentSummoned();
@@ -58,7 +56,6 @@ public class CommissarElectronicQueueController {
      * Проверить, есть ли вызванный призывник
      */
     @GetMapping("/has-summoned")
-    @Passed
     public boolean hasSummonedRecruit() {
         return electronicQueueService.hasSummonedRecruit();
     }

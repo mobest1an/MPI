@@ -1,6 +1,5 @@
 package com.iverpa.mpi.dao;
 
-import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.model.User;
 import com.iverpa.mpi.model.UserDetailsImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,13 +16,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
-    @Passed
     public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
         var user = userService.findByUsername(username);
         return new UserDetailsImpl(user.getUsername(), user.getPassword(), user.getRoles());
     }
 
-    @Passed
     public User save(UserDetailsImpl userDetails) {
         var user = userDetails.toEntity(null);
         if (userService.existsByUsername(user.getUsername())) {

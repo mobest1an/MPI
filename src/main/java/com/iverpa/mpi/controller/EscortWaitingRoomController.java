@@ -1,6 +1,5 @@
 package com.iverpa.mpi.controller;
 
-import com.iverpa.mpi.config.Passed;
 import com.iverpa.mpi.controller.dto.requests.CreateConvoyRequest;
 import com.iverpa.mpi.controller.dto.responses.ConvoyResponse;
 import com.iverpa.mpi.controller.dto.responses.WaitingRoomResponse;
@@ -18,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/escort")
 @RequiredArgsConstructor
-@Passed
 public class EscortWaitingRoomController {
 
     private final WaitingRoomService waitingRoomService;
