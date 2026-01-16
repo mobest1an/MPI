@@ -62,17 +62,38 @@ services:
     depends_on:
       - prometheus
 
-  tsung:
-    build: ./tsung
-    container_name: tsung
+#  tsung:
+#    build: ./tsung
+#    container_name: tsung
+#    volumes:
+#      - ./tsung/tsung.xml:/work/tsung.xml:ro
+#      - ./tsung/users.csv:/root/.tsung/users:ro
+#      - ./tsung/results:/results
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+#    command: ["tsung", "-f", "/work/tsung.xml", "-l", "/results", "start"]
+#    ulimits:
+#      nofile:
+#        soft: 65535
+#        hard: 65535
+
+  app:
+    container_name: spring-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
     volumes:
-      - ./tsung/tsung.xml:/work/tsung.xml:ro
-      - ./tsung/users.csv:/root/.tsung/users:ro
-      - ./tsung/results:/results
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: ["tsung", "-f", "/work/tsung.xml", "-l", "/results", "start"]
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      - ./private_key.der:/app/private_key.der:ro
+      - ./public_key.der:/app/public_key.der:ro
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/mpi
+      DB_USERNAME: mpi
+      DB_PASSWORD: mpi
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
