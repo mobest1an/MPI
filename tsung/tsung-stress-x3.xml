@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tsung SYSTEM "/usr/share/tsung/tsung-1.0.dtd">
+
+<tsung loglevel="debug" version="1.0">
+
+    <clients>
+        <client host="localhost" use_controller_vm="true" maxusers="2000" />
+    </clients>
+
+    <!-- Spring app on host -->
+    <servers>
+        <server host="host.docker.internal" port="8080" type="tcp" />
+    </servers>
+
+    <load>
+        <arrivalphase phase="1" duration="30" unit="second">
+            <users maxnumber="90" arrivalrate="3" unit="second"/>
+        </arrivalphase>
+        <arrivalphase phase="2" duration="30" unit="second">
+            <users maxnumber="900" arrivalrate="30" unit="second"/>
+        </arrivalphase>
+    </load>
+
+    <options>
+        <option name="file_server" value="/root/.tsung/users" id="users"/>
+    </options>
+
+    <sessions>
+        <session name="recruit-queue" probability="100" type="ts_http">
+
+            <!-- one (username,password) per virtual user -->
+            <setdynvars sourcetype="file" fileid="users" delimiter="," order="iter">
+                <var name="username"/>
+                <var name="password"/>
+            </setdynvars>
+
+            <!-- 0) REGISTER -->
+            <request subst="true">
+                <http url="/api/v1/auth/register" method="POST" version="1.1"
+                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
+
+            <!-- 1) LOGIN -->
+            <request subst="true">
+                <dyn_variable name="jwt"
+                              re="&quot;token&quot;[[:space:]]*:[[:space:]]*&quot;([^&quot;]+)&quot;"/>
+                <http url="/api/v1/auth/login" method="POST" version="1.1"
+                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
+
+<!--            <thinktime value="200" random="true" />-->
+
+            <!-- 2) JOIN QUEUE -->
+            <request subst="true">
+                <http method="POST"
+                      url="/api/v1/recruit/queue/join"
+                      version="1.1"
+                      contents='{"username":"%%_username%%"}'
+                      content_type="application/json">
+                    <http_header name="Accept" value="application/json" />
+                    <http_header name="Authorization" value="Bearer %%_jwt%%" />
+                </http>
+            </request>
+
+            <!-- 3) COMMISSAR LOGIN -->
+            <request subst="true">
+                <dyn_variable name="jwt_commissar"
+                              re="&quot;token&quot;[[:space:]]*:[[:space:]]*&quot;([^&quot;]+)&quot;"/>
+                <http url="/api/v1/auth/login" method="POST" version="1.1"
+                      contents='{"username":"commissar","password":"commissar"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
+
+            <!--            <thinktime value="200" random="true" />-->
+
+            <!-- 4) COMMISSAR SUMMON -->
+            <request subst="true">
+                <http method="POST"
+                      url="/api/v1/commissar/queue/summon"
+                      version="1.1"
+                      contents='{"username":"%%_username%%"}'
+                      content_type="application/json">
+                    <http_header name="Accept" value="application/json" />
+                    <http_header name="Authorization" value="Bearer %%_jwt_commissar%%" />
+                </http>
+            </request>
+
+            <!-- 5) COMMISSAR SEND -->
+            <request subst="true">
+                <http method="POST"
+                      url="/api/v1/commissar/room/send"
+                      version="1.1"
+                      contents='{"username":"%%_username%%","military_branch": "TEST"}'
+                      content_type="application/json">
+                    <http_header name="Accept" value="application/json" />
+                    <http_header name="Authorization" value="Bearer %%_jwt_commissar%%" />
+                </http>
+            </request>
+
+        </session>
+    </sessions>
+
+</tsung>
