@@ -4,7 +4,7 @@
 <tsung loglevel="debug" version="1.0">
 
     <clients>
-        <client host="localhost" use_controller_vm="true" maxusers="1000" />
+        <client host="localhost" use_controller_vm="true" maxusers="2000" />
     </clients>
 
     <!-- Spring app on host -->
@@ -17,7 +17,7 @@
             <users maxnumber="90" arrivalrate="3" unit="second"/>
         </arrivalphase>
         <arrivalphase phase="2" duration="30" unit="second">
-            <users maxnumber="900" arrivalrate="30" unit="second"/>
+            <users maxnumber="300" arrivalrate="8" unit="second"/>
         </arrivalphase>
     </load>
 
@@ -34,16 +34,14 @@
                 <var name="password"/>
             </setdynvars>
 
-<!--            &lt;!&ndash; 0) REGISTER &ndash;&gt;-->
-<!--            <request subst="true">-->
-<!--                <http url="/api/v1/auth/register" method="POST" version="1.1"-->
-<!--                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>-->
-<!--                    <http_header name="Content-Type" value="application/json"/>-->
-<!--                    <http_header name="Accept" value="application/json"/>-->
-<!--                </http>-->
-<!--            </request>-->
-
-<!--            <thinktime value="200" random="true" />-->
+            <!-- 0) REGISTER -->
+            <request subst="true">
+                <http url="/api/v1/auth/register" method="POST" version="1.1"
+                      contents='{"username":"%%_username%%","password":"%%_password%%"}'>
+                    <http_header name="Content-Type" value="application/json"/>
+                    <http_header name="Accept" value="application/json"/>
+                </http>
+            </request>
 
             <!-- 1) LOGIN -->
             <request subst="true">

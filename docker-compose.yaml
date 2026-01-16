@@ -20,6 +20,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -79,13 +84,24 @@ services:
   tsung:
     build: ./tsung
     container_name: tsung
+    ports:
+      - "8091:8091"
     volumes:
       - ./tsung/tsung.xml:/work/tsung.xml:ro
       - ./tsung/users.csv:/root/.tsung/users:ro
       - ./tsung/results:/results
+      - ./db/init.sql:/work/init.sql:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: ["tsung", "-f", "/work/tsung.xml", "-l", "/results", "start"]
+    command: >
+      sh -c '
+        until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        exec tsung -f /work/tsung.xml -l /results start -k ;
+      '
+    depends_on:
+      postgres:
+        condition: service_healthy
     ulimits:
       nofile:
         soft: 65535
@@ -105,3 +121,55 @@ services:
       sh -c "tsung -f /tsung/config/perform.xml -l /tsung/log start && \
              cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
              /usr/local/lib/tsung/bin/tsung_stats.pl"
+
+    deploy:
+      resources:
+        limits:
+          cpus: "12.0"
+          memory: 6G
+
+  app:
+    container_name: spring-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"   # expose management port
+    volumes:
+      - ./private_key.der:/app/private_key.der:ro
+      - ./public_key.der:/app/public_key.der:ro
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/mpi
+      DB_USERNAME: mpi
+      DB_PASSWORD: mpi
+      MANAGEMENT_SERVER_PORT: "8081"
+      MANAGEMENT_SERVER_ADDRESS: "0.0.0.0"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  db-init:
+    image: postgres:16
+    container_name: db-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./db/init.sql:/init.sql:ro
+    environment:
+      PGPASSWORD: mpi   # or mpi, depending which user you connect with
+    command: >
+      sh -c "
+        echo 'Running init.sql...' &&
+        psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /init.sql
+      "
+    restart: "no"

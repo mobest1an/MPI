@@ -1,16 +1,21 @@
-# Используем официальный образ OpenJDK для сборки
-FROM openjdk:17.0.2
+# ---- Build stage (Gradle already installed) ----
+FROM gradle:8.13-jdk17 AS build
+WORKDIR /home/gradle/project
 
-# Указываем рабочую директорию внутри контейнера
-WORKDIR /
+# Copy build scripts first (better caching)
+COPY settings.gradle* build.gradle* gradle.properties* ./
+COPY gradle ./gradle
+COPY gradlew ./
 
-# Копируем файл jar из локальной сборки в контейнер
-COPY build/libs/MPI-0.0.1-SNAPSHOT.jar app.jar
-COPY private_key.der private_key.der
-COPY public_key.der public_key.der
+# Copy the actual project sources
+COPY src ./src
 
-# Указываем команду запуска приложения
-CMD ["java", "-jar", "app.jar"]
+# Build
+RUN gradle --no-daemon clean bootJar -x test
 
-# Указываем порт, который будет слушать приложение
+# ---- Runtime stage ----
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+COPY --from=build /home/gradle/project/build/libs /app/libs
 EXPOSE 8080
+ENTRYPOINT ["sh","-c","java -jar /app/libs/$(ls /app/libs | grep -v plain | head -n 1)"]
