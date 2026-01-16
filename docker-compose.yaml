@@ -128,6 +128,37 @@ services:
           cpus: "12.0"
           memory: 6G
 
+  tsung-stress-1:
+    build: ./tsung
+    container_name: tsung-stress-1
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./tsung/tsung-stress-x3.xml:/work/tsung.xml:ro
+      - ./tsung/users.csv:/root/.tsung/users:ro
+      - ./tsung/results:/results
+      - ./db/init.sql:/work/init.sql:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      sh -c '
+        until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        exec tsung -f /work/tsung.xml -l /results start -k ;
+      '
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    deploy:
+      resources:
+        limits:
+          cpus: "12.0"
+          memory: 6G
+
   app:
     container_name: spring-app
     build:
