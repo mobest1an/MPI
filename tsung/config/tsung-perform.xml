@@ -9,7 +9,7 @@
 
     <!-- Spring app on host -->
     <servers>
-        <server host="backend" port="8080" type="tcp" />
+        <server host="app" port="8080" type="tcp" />
     </servers>
 
     <load>

@@ -38,20 +38,6 @@ services:
       postgres:
         condition: service_healthy
 
-  backend:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2g
-    build: '.'
-    ports:
-      - "8080:8080"
-    environment:
-      - DB_URL=jdbc:postgresql://postgres:5432/mpi
-    depends_on:
-      - postgres
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -81,47 +67,48 @@ services:
     depends_on:
       - prometheus
 
-  tsung:
-    build: ./tsung
-    container_name: tsung
+  tsung-load:
+    build: './tsung/config'
+    volumes:
+      - ./tsung/config:/tsung/config
+      - ./tsung/results/load:/tsung/log
+      - ./tsung/config/users.csv:/root/.tsung/users:ro
+      - ./db/init.sql:/work/init.sql:ro
     ports:
       - "8091:8091"
-    volumes:
-      - ./tsung/tsung.xml:/work/tsung.xml:ro
-      - ./tsung/users.csv:/root/.tsung/users:ro
-      - ./tsung/results:/results
-      - ./db/init.sql:/work/init.sql:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: >
-      sh -c '
-        until pg_isready -h postgres -U mpi; do sleep 1; done;
-        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
-        exec tsung -f /work/tsung.xml -l /results start -k ;
-      '
     depends_on:
-      postgres:
-        condition: service_healthy
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      - app
+    entrypoint: >
+      sh -c "until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        tsung -f /tsung/config/tsung-load.xml -l /tsung/log start && \
+        cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
+        /usr/local/lib/tsung/bin/tsung_stats.pl
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: "12.0"
+          memory: 6G
 
-  tsung-perform-test:
+  tsung-perform:
     build: './tsung/config'
     volumes:
       - ./tsung/config:/tsung/config
       - ./tsung/results/perform:/tsung/log
       - ./tsung/config/users.csv:/root/.tsung/users:ro
+      - ./db/init.sql:/work/init.sql:ro
     ports:
       - "8091:8091"
     depends_on:
-      - backend
+      - app
     entrypoint: >
-      sh -c "tsung -f /tsung/config/perform.xml -l /tsung/log start && \
-             cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
-             /usr/local/lib/tsung/bin/tsung_stats.pl"
-
+      sh -c "until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        tsung -f /tsung/config/tsung-perform.xml -l /tsung/log start && \
+        cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
+        /usr/local/lib/tsung/bin/tsung_stats.pl
+      "
     deploy:
       resources:
         limits:
@@ -129,30 +116,23 @@ services:
           memory: 6G
 
   tsung-stress-1:
-    build: ./tsung
-    container_name: tsung-stress-1
+    build: './tsung/config'
+    volumes:
+      - ./tsung/config:/tsung/config
+      - ./tsung/results/stress1:/tsung/log
+      - ./tsung/config/users.csv:/root/.tsung/users:ro
+      - ./db/init.sql:/work/init.sql:ro
     ports:
       - "8091:8091"
-    volumes:
-      - ./tsung/tsung-stress-x3.xml:/work/tsung.xml:ro
-      - ./tsung/users.csv:/root/.tsung/users:ro
-      - ./tsung/results:/results
-      - ./db/init.sql:/work/init.sql:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: >
-      sh -c '
-        until pg_isready -h postgres -U mpi; do sleep 1; done;
-        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
-        exec tsung -f /work/tsung.xml -l /results start -k ;
-      '
     depends_on:
-      postgres:
-        condition: service_healthy
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      - app
+    entrypoint: >
+      sh -c "until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        tsung -f /tsung/config/tsung-stress-x3.xml -l /tsung/log start && \
+        cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
+        /usr/local/lib/tsung/bin/tsung_stats.pl
+      "
     deploy:
       resources:
         limits:
@@ -160,30 +140,23 @@ services:
           memory: 6G
 
   tsung-stress-2:
-    build: ./tsung
-    container_name: tsung-stress-2
+    build: './tsung/config'
+    volumes:
+      - ./tsung/config:/tsung/config
+      - ./tsung/results/stress2:/tsung/log
+      - ./tsung/config/users.csv:/root/.tsung/users:ro
+      - ./db/init.sql:/work/init.sql:ro
     ports:
       - "8091:8091"
-    volumes:
-      - ./tsung/tsung-stress-5000-reg.xml:/work/tsung.xml:ro
-      - ./tsung/users.csv:/root/.tsung/users:ro
-      - ./tsung/results:/results
-      - ./db/init.sql:/work/init.sql:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: >
-      sh -c '
-        until pg_isready -h postgres -U mpi; do sleep 1; done;
-        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
-        exec tsung -f /work/tsung.xml -l /results start -k ;
-      '
     depends_on:
-      postgres:
-        condition: service_healthy
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      - app
+    entrypoint: >
+      sh -c "until pg_isready -h postgres -U mpi; do sleep 1; done;
+        PGPASSWORD=mpi psql -h postgres -U mpi -d mpi -v ON_ERROR_STOP=1 -f /work/init.sql;
+        tsung -f /tsung/config/tsung-stress-5000-reg.xml -l /tsung/log start && \
+        cd /tsung/log/\$(ls -1t /tsung/log | head -n 1) && \
+        /usr/local/lib/tsung/bin/tsung_stats.pl
+      "
     deploy:
       resources:
         limits:
@@ -198,7 +171,7 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-      - "8081:8081"   # expose management port
+      - "8081:8081"
     volumes:
       - ./private_key.der:/app/private_key.der:ro
       - ./public_key.der:/app/public_key.der:ro
@@ -211,8 +184,7 @@ services:
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     deploy:
       resources:
         limits:

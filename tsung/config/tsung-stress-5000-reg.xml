@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE tsung SYSTEM "/usr/share/tsung/tsung-1.0.dtd">
+<!DOCTYPE tsung SYSTEM "/usr/local/share/tsung/tsung-1.0.dtd">
 
 <tsung loglevel="debug" version="1.0">
 
@@ -9,7 +9,7 @@
 
     <!-- Spring app on host -->
     <servers>
-        <server host="host.docker.internal" port="8080" type="tcp" />
+        <server host="app" port="8080" type="tcp" />
     </servers>
 
     <load>

@@ -15,4 +15,4 @@ SCRIPT_DIR="$(dirname "$0")"
 psql --username mpi --dbname mpi -f "$SCRIPT_DIR/init_schema.sql"
 
 SCRIPT_DIR="$(dirname "$0")"
-psql --username mpi --dbname mpi -f "$SCRIPT_DIR/init_data.sql"
+psql --username mpi --dbname mpi -f "$SCRIPT_DIR/init.sql"

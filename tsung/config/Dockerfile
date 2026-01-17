@@ -8,7 +8,8 @@ RUN apt-get update && \
     libxml2-dev libexpat1-dev libssl-dev \
     perl libtemplate-perl libfile-spec-perl \
     libhtml-template-perl libgd-gd2-perl \
-    gnuplot fontconfig && \
+    gnuplot fontconfig \
+    postgresql-client && \
     update-ca-certificates && \
     \
     wget https://github.com/processone/tsung/archive/refs/tags/v1.8.0.tar.gz && \
