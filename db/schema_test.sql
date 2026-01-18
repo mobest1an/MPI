@@ -1,0 +1,400 @@
+-- schema_test.sql (PostgreSQL)
+-- Verifies: tables, columns (type/length/identity), NOT NULLs, PKs, FKs, UNIQUE, CHECKs.
+-- Does NOT rely on constraint names.
+-- Leaves no data behind.
+
+BEGIN;
+
+DO $$
+DECLARE
+  v_cnt  int;
+  v_cols text;
+
+  u1 bigint;
+  u2 bigint;
+  c1 bigint;
+BEGIN
+  ---------------------------------------------------------------------------
+  -- 1) TABLES EXIST
+  ---------------------------------------------------------------------------
+  PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.users'; END IF;
+
+  PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='convoy';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.convoy'; END IF;
+
+  PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='complaint';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.complaint'; END IF;
+
+  PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='roles';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.roles'; END IF;
+
+  PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='summon';
+  IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.summon'; END IF;
+
+  ---------------------------------------------------------------------------
+  -- 2) COLUMNS EXIST + TYPE/LENGTH + NULLABILITY + IDENTITY
+  ---------------------------------------------------------------------------
+  -- users
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='users' AND column_name='id'
+     AND data_type='bigint' AND is_identity='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'users.id must be bigint identity'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='users' AND column_name='password'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'users.password must be varchar(255) NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='users' AND column_name='username'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'users.username must be varchar(255) NULL'; END IF;
+
+  -- convoy
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='convoy' AND column_name='id'
+     AND data_type='bigint' AND is_identity='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'convoy.id must be bigint identity'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='convoy' AND column_name='escort_id'
+     AND data_type='bigint' AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'convoy.escort_id must be bigint NOT NULL'; END IF;
+
+  -- complaint
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='complaint' AND column_name='id'
+     AND data_type='bigint' AND is_identity='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'complaint.id must be bigint identity'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='complaint' AND column_name='created_at'
+     AND data_type='timestamp without time zone' AND datetime_precision=6
+     AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'complaint.created_at must be timestamp(6) NOT NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='complaint' AND column_name='status'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'complaint.status must be varchar(255) NOT NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='complaint' AND column_name='assigned_to_id'
+     AND data_type='bigint' AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'complaint.assigned_to_id must be bigint NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='complaint' AND column_name='convoy_id'
+     AND data_type='bigint' AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'complaint.convoy_id must be bigint NOT NULL'; END IF;
+
+  -- roles
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='roles' AND column_name='user_id'
+     AND data_type='bigint' AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'roles.user_id must be bigint NOT NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='roles' AND column_name='name'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'roles.name must be varchar(255) NULL'; END IF;
+
+  -- summon
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='summon' AND column_name='id'
+     AND data_type='bigint' AND is_identity='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.id must be bigint identity'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='summon' AND column_name='military_branch'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.military_branch must be varchar(255) NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='summon' AND column_name='status'
+     AND data_type='character varying' AND character_maximum_length=255
+     AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.status must be varchar(255) NOT NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='summon' AND column_name='convoy_id'
+     AND data_type='bigint' AND is_nullable='YES';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.convoy_id must be bigint NULL'; END IF;
+
+  SELECT count(*) INTO v_cnt FROM information_schema.columns
+   WHERE table_schema='public' AND table_name='summon' AND column_name='user_id'
+     AND data_type='bigint' AND is_nullable='NO';
+  IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.user_id must be bigint NOT NULL'; END IF;
+
+  ---------------------------------------------------------------------------
+  -- 3) PRIMARY KEYS (by table+columns, not by constraint name)
+  ---------------------------------------------------------------------------
+  -- users PK(id)
+  SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+   AND tc.table_schema    = kcu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='users' AND tc.constraint_type='PRIMARY KEY';
+  IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'users must have PK(id); got: %', v_cols; END IF;
+
+  -- convoy PK(id)
+  SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+   AND tc.table_schema    = kcu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='convoy' AND tc.constraint_type='PRIMARY KEY';
+  IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'convoy must have PK(id); got: %', v_cols; END IF;
+
+  -- complaint PK(id)
+  SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+   AND tc.table_schema    = kcu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='complaint' AND tc.constraint_type='PRIMARY KEY';
+  IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'complaint must have PK(id); got: %', v_cols; END IF;
+
+  -- summon PK(id)
+  SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name
+   AND tc.table_schema    = kcu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='PRIMARY KEY';
+  IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'summon must have PK(id); got: %', v_cols; END IF;
+
+  ---------------------------------------------------------------------------
+  -- 4) FOREIGN KEYS (by column + referenced table/column)
+  ---------------------------------------------------------------------------
+  -- convoy.escort_id -> users.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='convoy' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='escort_id'
+    AND ccu.table_schema='public' AND ccu.table_name='users' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: convoy.escort_id -> users.id'; END IF;
+
+  -- complaint.assigned_to_id -> users.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='complaint' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='assigned_to_id'
+    AND ccu.table_schema='public' AND ccu.table_name='users' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: complaint.assigned_to_id -> users.id'; END IF;
+
+  -- complaint.convoy_id -> convoy.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='complaint' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='convoy_id'
+    AND ccu.table_schema='public' AND ccu.table_name='convoy' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: complaint.convoy_id -> convoy.id'; END IF;
+
+  -- roles.user_id -> users.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='roles' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='user_id'
+    AND ccu.table_schema='public' AND ccu.table_name='users' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: roles.user_id -> users.id'; END IF;
+
+  -- summon.convoy_id -> convoy.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='convoy_id'
+    AND ccu.table_schema='public' AND ccu.table_name='convoy' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: summon.convoy_id -> convoy.id'; END IF;
+
+  -- summon.user_id -> users.id
+  SELECT count(*) INTO v_cnt
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  JOIN information_schema.constraint_column_usage ccu
+    ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='FOREIGN KEY'
+    AND kcu.column_name='user_id'
+    AND ccu.table_schema='public' AND ccu.table_name='users' AND ccu.column_name='id';
+  IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: summon.user_id -> users.id'; END IF;
+
+  ---------------------------------------------------------------------------
+  -- 5) UNIQUE (summon.user_id)
+  ---------------------------------------------------------------------------
+  SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+  WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='UNIQUE'
+  GROUP BY tc.constraint_name
+  HAVING string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) = 'user_id'
+  LIMIT 1;
+
+  IF v_cols IS DISTINCT FROM 'user_id' THEN
+    RAISE EXCEPTION 'Missing UNIQUE constraint on summon(user_id)';
+  END IF;
+
+  ---------------------------------------------------------------------------
+  -- 6) Behavioral checks (ensures NOT NULL, FK, UNIQUE, CHECK actually enforce)
+  --    Uses subtransactions (BEGIN..EXCEPTION) so failures do not abort whole test.
+  ---------------------------------------------------------------------------
+  INSERT INTO users(username, password) VALUES ('u1','p') RETURNING id INTO u1;
+  INSERT INTO users(username, password) VALUES ('u2','p') RETURNING id INTO u2;
+  INSERT INTO convoy(escort_id) VALUES (u1) RETURNING id INTO c1;
+
+  -- NOT NULL checks
+  BEGIN
+    INSERT INTO convoy(escort_id) VALUES (NULL);
+    RAISE EXCEPTION 'Expected NOT NULL violation for convoy.escort_id';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO complaint(created_at, status, convoy_id) VALUES (NULL, 'NEW', c1);
+    RAISE EXCEPTION 'Expected NOT NULL violation for complaint.created_at';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), NULL, c1);
+    RAISE EXCEPTION 'Expected NOT NULL violation for complaint.status';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'NEW', NULL);
+    RAISE EXCEPTION 'Expected NOT NULL violation for complaint.convoy_id';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO roles(user_id, name) VALUES (NULL, 'RECRUIT');
+    RAISE EXCEPTION 'Expected NOT NULL violation for roles.user_id';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO summon(user_id, status) VALUES (u2, NULL);
+    RAISE EXCEPTION 'Expected NOT NULL violation for summon.status';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO summon(user_id, status) VALUES (NULL, 'NOT_STARTED');
+    RAISE EXCEPTION 'Expected NOT NULL violation for summon.user_id';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
+
+  -- FK enforcement checks
+  BEGIN
+    INSERT INTO convoy(escort_id) VALUES (999999999999);
+    RAISE EXCEPTION 'Expected FK violation for convoy.escort_id -> users.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'NEW', 999999999999);
+    RAISE EXCEPTION 'Expected FK violation for complaint.convoy_id -> convoy.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO complaint(created_at, status, assigned_to_id, convoy_id)
+    VALUES (clock_timestamp(), 'NEW', 999999999999, c1);
+    RAISE EXCEPTION 'Expected FK violation for complaint.assigned_to_id -> users.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO roles(user_id, name) VALUES (999999999999, 'RECRUIT');
+    RAISE EXCEPTION 'Expected FK violation for roles.user_id -> users.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO summon(user_id, status) VALUES (999999999999, 'NOT_STARTED');
+    RAISE EXCEPTION 'Expected FK violation for summon.user_id -> users.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO summon(user_id, status, convoy_id) VALUES (u2, 'NOT_STARTED', 999999999999);
+    RAISE EXCEPTION 'Expected FK violation for summon.convoy_id -> convoy.id';
+  EXCEPTION WHEN foreign_key_violation THEN
+    NULL;
+  END;
+
+  -- UNIQUE enforcement: summon.user_id
+  INSERT INTO summon(user_id, status) VALUES (u2, 'NOT_STARTED');
+  BEGIN
+    INSERT INTO summon(user_id, status) VALUES (u2, 'IN_QUEUE');
+    RAISE EXCEPTION 'Expected UNIQUE violation for summon.user_id';
+  EXCEPTION WHEN unique_violation THEN
+    NULL;
+  END;
+
+  -- CHECK constraints (allowed values)
+  BEGIN
+    INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'BAD', c1);
+    RAISE EXCEPTION 'Expected CHECK violation for complaint.status allowed values';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO roles(user_id, name) VALUES (u1, 'BAD');
+    RAISE EXCEPTION 'Expected CHECK violation for roles.name allowed values';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO summon(user_id, status) VALUES (u1, 'BAD');
+    RAISE EXCEPTION 'Expected CHECK violation for summon.status allowed values';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+END $$;
+
+ROLLBACK;

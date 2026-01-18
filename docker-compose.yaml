@@ -297,3 +297,29 @@ services:
     restart: "no"
     stdin_open: false
     tty: false
+
+  schema-test:
+    image: postgres:16
+    container_name: schema-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./db/schema_test.sql:/schema_test.sql:ro
+    environment:
+      PGPASSWORD: mpi
+    entrypoint: ["psql"]
+    command:
+      - "-h"
+      - "postgres"
+      - "-U"
+      - "mpi"
+      - "-d"
+      - "mpi"
+      - "-v"
+      - "ON_ERROR_STOP=1"
+      - "-f"
+      - "/schema_test.sql"
+    restart: "no"
+    stdin_open: false
+    tty: false
