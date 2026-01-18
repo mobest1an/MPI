@@ -194,6 +194,8 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
+      - "9010:9010"
+      - "9011:9011"
     volumes:
       - ./private_key.der:/app/private_key.der:ro
       - ./public_key.der:/app/public_key.der:ro

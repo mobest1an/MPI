@@ -18,4 +18,12 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /home/gradle/project/build/libs /app/libs
 EXPOSE 8080
-ENTRYPOINT ["sh","-c","java -jar /app/libs/$(ls /app/libs | grep -v plain | head -n 1)"]
+EXPOSE 9010
+ENTRYPOINT ["sh","-c","java \
+            -Dcom.sun.management.jmxremote \
+            -Dcom.sun.management.jmxremote.port=9010 \
+            -Dcom.sun.management.jmxremote.rmi.port=9011 \
+            -Djava.rmi.server.hostname=localhost \
+            -Dcom.sun.management.jmxremote.ssl=false \
+            -Dcom.sun.management.jmxremote.authenticate=false \
+            -jar /app/libs/$(ls /app/libs | grep -v plain | head -n 1)"]
