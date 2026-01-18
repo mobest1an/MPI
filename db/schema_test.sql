@@ -1,7 +1,7 @@
 -- schema_test.sql (PostgreSQL)
--- Verifies: tables, columns (type/length/identity), NOT NULLs, PKs, FKs, UNIQUE, CHECKs.
--- Does NOT rely on constraint names.
--- Leaves no data behind.
+-- Verifies: tables, columns (type/length/identity), NOT NULLs, PKs, FKs, UNIQUE, and
+-- *custom CHECK constraints* (valid values accepted, invalid rejected).
+-- Does NOT rely on constraint names. Leaves no data behind.
 
 BEGIN;
 
@@ -12,7 +12,10 @@ DECLARE
 
   u1 bigint;
   u2 bigint;
+  u3 bigint;
   c1 bigint;
+
+  s text;
 BEGIN
   ---------------------------------------------------------------------------
   -- 1) TABLES EXIST
@@ -33,7 +36,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.summon'; END IF;
 
   ---------------------------------------------------------------------------
-  -- 2) COLUMNS EXIST + TYPE/LENGTH + NULLABILITY + IDENTITY
+  -- 2) COLUMNS + TYPES/LENGTHS + NULLABILITY + IDENTITY
   ---------------------------------------------------------------------------
   -- users
   SELECT count(*) INTO v_cnt FROM information_schema.columns
@@ -133,41 +136,33 @@ BEGIN
   IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.user_id must be bigint NOT NULL'; END IF;
 
   ---------------------------------------------------------------------------
-  -- 3) PRIMARY KEYS (by table+columns, not by constraint name)
+  -- 3) PRIMARY KEYS (by table+columns)
   ---------------------------------------------------------------------------
-  -- users PK(id)
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
-    ON tc.constraint_name = kcu.constraint_name
-   AND tc.table_schema    = kcu.table_schema
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
   WHERE tc.table_schema='public' AND tc.table_name='users' AND tc.constraint_type='PRIMARY KEY';
   IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'users must have PK(id); got: %', v_cols; END IF;
 
-  -- convoy PK(id)
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
-    ON tc.constraint_name = kcu.constraint_name
-   AND tc.table_schema    = kcu.table_schema
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
   WHERE tc.table_schema='public' AND tc.table_name='convoy' AND tc.constraint_type='PRIMARY KEY';
   IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'convoy must have PK(id); got: %', v_cols; END IF;
 
-  -- complaint PK(id)
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
-    ON tc.constraint_name = kcu.constraint_name
-   AND tc.table_schema    = kcu.table_schema
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
   WHERE tc.table_schema='public' AND tc.table_name='complaint' AND tc.constraint_type='PRIMARY KEY';
   IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'complaint must have PK(id); got: %', v_cols; END IF;
 
-  -- summon PK(id)
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
-    ON tc.constraint_name = kcu.constraint_name
-   AND tc.table_schema    = kcu.table_schema
+    ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
   WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='PRIMARY KEY';
   IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'summon must have PK(id); got: %', v_cols; END IF;
 
@@ -263,105 +258,92 @@ BEGIN
   END IF;
 
   ---------------------------------------------------------------------------
-  -- 6) Behavioral checks (ensures NOT NULL, FK, UNIQUE, CHECK actually enforce)
-  --    Uses subtransactions (BEGIN..EXCEPTION) so failures do not abort whole test.
+  -- 6) Behavioral enforcement tests (NOT NULL / FK / UNIQUE / CHECK)
   ---------------------------------------------------------------------------
   INSERT INTO users(username, password) VALUES ('u1','p') RETURNING id INTO u1;
   INSERT INTO users(username, password) VALUES ('u2','p') RETURNING id INTO u2;
+  INSERT INTO users(username, password) VALUES ('u3','p') RETURNING id INTO u3;
   INSERT INTO convoy(escort_id) VALUES (u1) RETURNING id INTO c1;
 
   -- NOT NULL checks
   BEGIN
     INSERT INTO convoy(escort_id) VALUES (NULL);
     RAISE EXCEPTION 'Expected NOT NULL violation for convoy.escort_id';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO complaint(created_at, status, convoy_id) VALUES (NULL, 'NEW', c1);
     RAISE EXCEPTION 'Expected NOT NULL violation for complaint.created_at';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), NULL, c1);
     RAISE EXCEPTION 'Expected NOT NULL violation for complaint.status';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'NEW', NULL);
     RAISE EXCEPTION 'Expected NOT NULL violation for complaint.convoy_id';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO roles(user_id, name) VALUES (NULL, 'RECRUIT');
     RAISE EXCEPTION 'Expected NOT NULL violation for roles.user_id';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO summon(user_id, status) VALUES (u2, NULL);
     RAISE EXCEPTION 'Expected NOT NULL violation for summon.status';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO summon(user_id, status) VALUES (NULL, 'NOT_STARTED');
     RAISE EXCEPTION 'Expected NOT NULL violation for summon.user_id';
-  EXCEPTION WHEN not_null_violation THEN
-    NULL;
+  EXCEPTION WHEN not_null_violation THEN NULL;
   END;
 
   -- FK enforcement checks
   BEGIN
     INSERT INTO convoy(escort_id) VALUES (999999999999);
     RAISE EXCEPTION 'Expected FK violation for convoy.escort_id -> users.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'NEW', 999999999999);
     RAISE EXCEPTION 'Expected FK violation for complaint.convoy_id -> convoy.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO complaint(created_at, status, assigned_to_id, convoy_id)
     VALUES (clock_timestamp(), 'NEW', 999999999999, c1);
     RAISE EXCEPTION 'Expected FK violation for complaint.assigned_to_id -> users.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO roles(user_id, name) VALUES (999999999999, 'RECRUIT');
     RAISE EXCEPTION 'Expected FK violation for roles.user_id -> users.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO summon(user_id, status) VALUES (999999999999, 'NOT_STARTED');
     RAISE EXCEPTION 'Expected FK violation for summon.user_id -> users.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   BEGIN
     INSERT INTO summon(user_id, status, convoy_id) VALUES (u2, 'NOT_STARTED', 999999999999);
     RAISE EXCEPTION 'Expected FK violation for summon.convoy_id -> convoy.id';
-  EXCEPTION WHEN foreign_key_violation THEN
-    NULL;
+  EXCEPTION WHEN foreign_key_violation THEN NULL;
   END;
 
   -- UNIQUE enforcement: summon.user_id
@@ -369,30 +351,69 @@ BEGIN
   BEGIN
     INSERT INTO summon(user_id, status) VALUES (u2, 'IN_QUEUE');
     RAISE EXCEPTION 'Expected UNIQUE violation for summon.user_id';
-  EXCEPTION WHEN unique_violation THEN
-    NULL;
+  EXCEPTION WHEN unique_violation THEN NULL;
   END;
 
-  -- CHECK constraints (allowed values)
+  ---------------------------------------------------------------------------
+  -- 7) CUSTOM CHECK CONSTRAINTS (verify allowed sets)
+  ---------------------------------------------------------------------------
+
+  -- complaint.status allowed values must be accepted
+  FOR s IN SELECT unnest(ARRAY['NEW','IN_PROGRESS','COMPLETED']) LOOP
+    BEGIN
+      INSERT INTO complaint(created_at, status, convoy_id)
+      VALUES (clock_timestamp(), s, c1);
+    EXCEPTION WHEN check_violation THEN
+      RAISE EXCEPTION 'complaint.status rejected allowed value: %', s;
+    END;
+  END LOOP;
+
+  -- complaint.status must reject an invalid value
   BEGIN
     INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'BAD', c1);
-    RAISE EXCEPTION 'Expected CHECK violation for complaint.status allowed values';
+    RAISE EXCEPTION 'Expected CHECK violation for complaint.status (invalid value)';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+
+  -- roles.name allowed values must be accepted (and NULL must be accepted)
+  FOR s IN SELECT unnest(ARRAY['RECRUIT','ESCORT','COMMISSAR','ADMIN','MILITARY_POLICE']) LOOP
+    BEGIN
+      INSERT INTO roles(user_id, name) VALUES (u1, s);
+    EXCEPTION WHEN check_violation THEN
+      RAISE EXCEPTION 'roles.name rejected allowed value: %', s;
+    END;
+  END LOOP;
+
+  BEGIN
+    INSERT INTO roles(user_id, name) VALUES (u1, NULL); -- should pass (nullable; CHECK should not block NULL)
   EXCEPTION WHEN check_violation THEN
-    NULL;
+    RAISE EXCEPTION 'roles.name CHECK should allow NULL but rejected it';
   END;
 
   BEGIN
     INSERT INTO roles(user_id, name) VALUES (u1, 'BAD');
-    RAISE EXCEPTION 'Expected CHECK violation for roles.name allowed values';
-  EXCEPTION WHEN check_violation THEN
-    NULL;
+    RAISE EXCEPTION 'Expected CHECK violation for roles.name (invalid value)';
+  EXCEPTION WHEN check_violation THEN NULL;
   END;
 
+  -- summon.status allowed values must be accepted
+  -- (summon.user_id is UNIQUE, so insert+delete per iteration using u3)
+  FOR s IN SELECT unnest(ARRAY[
+      'NOT_STARTED','IN_QUEUE','SUMMONED','WAITING_ESCORT','IN_CONVOY','DONE'
+  ]) LOOP
+    BEGIN
+      INSERT INTO summon(user_id, status) VALUES (u3, s);
+      DELETE FROM summon WHERE user_id = u3;
+    EXCEPTION WHEN check_violation THEN
+      RAISE EXCEPTION 'summon.status rejected allowed value: %', s;
+    END;
+  END LOOP;
+
+  -- summon.status must reject an invalid value
   BEGIN
-    INSERT INTO summon(user_id, status) VALUES (u1, 'BAD');
-    RAISE EXCEPTION 'Expected CHECK violation for summon.status allowed values';
-  EXCEPTION WHEN check_violation THEN
-    NULL;
+    INSERT INTO summon(user_id, status) VALUES (u3, 'BAD');
+    RAISE EXCEPTION 'Expected CHECK violation for summon.status (invalid value)';
+  EXCEPTION WHEN check_violation THEN NULL;
   END;
 
 END $$;
