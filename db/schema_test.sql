@@ -1,9 +1,11 @@
--- schema_test.sql (PostgreSQL)
--- Verifies: tables, columns (type/length/identity), NOT NULLs, PKs, FKs, UNIQUE, and
--- *custom CHECK constraints* (valid values accepted, invalid rejected).
--- Does NOT rely on constraint names. Leaves no data behind.
+-- schema_test_with_progress.sql (PostgreSQL)
+-- Prints progress per stage using RAISE NOTICE 'OK: ...'
+-- Does NOT rely on constraint names. Leaves no data behind (ROLLBACK).
 
 BEGIN;
+
+-- Optional: ensure NOTICE messages are shown in most clients
+SET client_min_messages TO NOTICE;
 
 DO $$
 DECLARE
@@ -20,6 +22,8 @@ BEGIN
   ---------------------------------------------------------------------------
   -- 1) TABLES EXIST
   ---------------------------------------------------------------------------
+  RAISE NOTICE '1) Checking tables exist...';
+
   PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users';
   IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.users'; END IF;
 
@@ -35,9 +39,13 @@ BEGIN
   PERFORM 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='summon';
   IF NOT FOUND THEN RAISE EXCEPTION 'Missing table public.summon'; END IF;
 
+  RAISE NOTICE 'OK 1) Tables exist';
+
   ---------------------------------------------------------------------------
   -- 2) COLUMNS + TYPES/LENGTHS + NULLABILITY + IDENTITY
   ---------------------------------------------------------------------------
+  RAISE NOTICE '2) Checking columns, types, lengths, nullability, identity...';
+
   -- users
   SELECT count(*) INTO v_cnt FROM information_schema.columns
    WHERE table_schema='public' AND table_name='users' AND column_name='id'
@@ -135,9 +143,13 @@ BEGIN
      AND data_type='bigint' AND is_nullable='NO';
   IF v_cnt <> 1 THEN RAISE EXCEPTION 'summon.user_id must be bigint NOT NULL'; END IF;
 
+  RAISE NOTICE 'OK 2) Columns/types/nullability/identity';
+
   ---------------------------------------------------------------------------
   -- 3) PRIMARY KEYS (by table+columns)
   ---------------------------------------------------------------------------
+  RAISE NOTICE '3) Checking primary keys (by columns)...';
+
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
@@ -166,9 +178,13 @@ BEGIN
   WHERE tc.table_schema='public' AND tc.table_name='summon' AND tc.constraint_type='PRIMARY KEY';
   IF v_cols IS DISTINCT FROM 'id' THEN RAISE EXCEPTION 'summon must have PK(id); got: %', v_cols; END IF;
 
+  RAISE NOTICE 'OK 3) Primary keys';
+
   ---------------------------------------------------------------------------
   -- 4) FOREIGN KEYS (by column + referenced table/column)
   ---------------------------------------------------------------------------
+  RAISE NOTICE '4) Checking foreign keys (by column and referenced table/column)...';
+
   -- convoy.escort_id -> users.id
   SELECT count(*) INTO v_cnt
   FROM information_schema.table_constraints tc
@@ -241,9 +257,13 @@ BEGIN
     AND ccu.table_schema='public' AND ccu.table_name='users' AND ccu.column_name='id';
   IF v_cnt < 1 THEN RAISE EXCEPTION 'Missing FK: summon.user_id -> users.id'; END IF;
 
+  RAISE NOTICE 'OK 4) Foreign keys';
+
   ---------------------------------------------------------------------------
   -- 5) UNIQUE (summon.user_id)
   ---------------------------------------------------------------------------
+  RAISE NOTICE '5) Checking UNIQUE constraints...';
+
   SELECT string_agg(kcu.column_name, ',' ORDER BY kcu.ordinal_position) INTO v_cols
   FROM information_schema.table_constraints tc
   JOIN information_schema.key_column_usage kcu
@@ -257,9 +277,13 @@ BEGIN
     RAISE EXCEPTION 'Missing UNIQUE constraint on summon(user_id)';
   END IF;
 
+  RAISE NOTICE 'OK 5) UNIQUE constraints';
+
   ---------------------------------------------------------------------------
   -- 6) Behavioral enforcement tests (NOT NULL / FK / UNIQUE / CHECK)
   ---------------------------------------------------------------------------
+  RAISE NOTICE '6) Running enforcement tests (NOT NULL, FK, UNIQUE)...';
+
   INSERT INTO users(username, password) VALUES ('u1','p') RETURNING id INTO u1;
   INSERT INTO users(username, password) VALUES ('u2','p') RETURNING id INTO u2;
   INSERT INTO users(username, password) VALUES ('u3','p') RETURNING id INTO u3;
@@ -354,11 +378,14 @@ BEGIN
   EXCEPTION WHEN unique_violation THEN NULL;
   END;
 
-  ---------------------------------------------------------------------------
-  -- 7) CUSTOM CHECK CONSTRAINTS (verify allowed sets)
-  ---------------------------------------------------------------------------
+  RAISE NOTICE 'OK 6) Enforcement tests (NOT NULL/FK/UNIQUE)';
 
-  -- complaint.status allowed values must be accepted
+  ---------------------------------------------------------------------------
+  -- 7) CUSTOM CHECK CONSTRAINTS (allowed sets)
+  ---------------------------------------------------------------------------
+  RAISE NOTICE '7) Checking custom CHECK constraints (allowed value sets)...';
+
+  -- 7.1 complaint.status allowed values must be accepted
   FOR s IN SELECT unnest(ARRAY['NEW','IN_PROGRESS','COMPLETED']) LOOP
     BEGIN
       INSERT INTO complaint(created_at, status, convoy_id)
@@ -370,12 +397,15 @@ BEGIN
 
   -- complaint.status must reject an invalid value
   BEGIN
-    INSERT INTO complaint(created_at, status, convoy_id) VALUES (clock_timestamp(), 'BAD', c1);
+    INSERT INTO complaint(created_at, status, convoy_id)
+    VALUES (clock_timestamp(), 'BAD', c1);
     RAISE EXCEPTION 'Expected CHECK violation for complaint.status (invalid value)';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
-  -- roles.name allowed values must be accepted (and NULL must be accepted)
+  RAISE NOTICE 'OK 7.1) complaint.status CHECK';
+
+  -- 7.2 roles.name allowed values must be accepted (and NULL must be accepted)
   FOR s IN SELECT unnest(ARRAY['RECRUIT','ESCORT','COMMISSAR','ADMIN','MILITARY_POLICE']) LOOP
     BEGIN
       INSERT INTO roles(user_id, name) VALUES (u1, s);
@@ -385,7 +415,7 @@ BEGIN
   END LOOP;
 
   BEGIN
-    INSERT INTO roles(user_id, name) VALUES (u1, NULL); -- should pass (nullable; CHECK should not block NULL)
+    INSERT INTO roles(user_id, name) VALUES (u1, NULL); -- CHECK should allow NULL
   EXCEPTION WHEN check_violation THEN
     RAISE EXCEPTION 'roles.name CHECK should allow NULL but rejected it';
   END;
@@ -396,8 +426,10 @@ BEGIN
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
-  -- summon.status allowed values must be accepted
-  -- (summon.user_id is UNIQUE, so insert+delete per iteration using u3)
+  RAISE NOTICE 'OK 7.2) roles.name CHECK';
+
+  -- 7.3 summon.status allowed values must be accepted
+  -- summon.user_id is UNIQUE, so use u3 and delete between iterations
   FOR s IN SELECT unnest(ARRAY[
       'NOT_STARTED','IN_QUEUE','SUMMONED','WAITING_ESCORT','IN_CONVOY','DONE'
   ]) LOOP
@@ -409,13 +441,20 @@ BEGIN
     END;
   END LOOP;
 
-  -- summon.status must reject an invalid value
   BEGIN
     INSERT INTO summon(user_id, status) VALUES (u3, 'BAD');
     RAISE EXCEPTION 'Expected CHECK violation for summon.status (invalid value)';
   EXCEPTION WHEN check_violation THEN NULL;
   END;
 
+  RAISE NOTICE 'OK 7.3) summon.status CHECK';
+
+  RAISE NOTICE 'OK 7) Custom CHECK constraints';
+
+  ---------------------------------------------------------------------------
+  -- DONE
+  ---------------------------------------------------------------------------
+  RAISE NOTICE 'ALL OK: schema verification completed successfully.';
 END $$;
 
 ROLLBACK;
