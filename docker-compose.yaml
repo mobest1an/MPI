@@ -95,7 +95,7 @@ services:
     build: './tsung/config'
     volumes:
       - ./tsung/config:/tsung/config
-      - ./tsung/results/load:/tsung/log
+      - ./tsung/results/volume:/tsung/log
       - ./tsung/config/users.csv:/root/.tsung/users:ro
     ports:
       - "8091:8091"
