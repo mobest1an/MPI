@@ -13,11 +13,9 @@
     </servers>
 
     <load>
+        <!-- Фаза стабильной нагрузки: 30 пользователей постоянно -->
         <arrivalphase phase="1" duration="30" unit="second">
-            <users maxnumber="90" arrivalrate="3" unit="second"/>
-        </arrivalphase>
-        <arrivalphase phase="2" duration="30" unit="second">
-            <users maxnumber="900" arrivalrate="30" unit="second"/>
+            <users maxnumber="450" arrivalrate="15" unit="second"/>
         </arrivalphase>
     </load>
 

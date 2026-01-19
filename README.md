@@ -3,7 +3,7 @@
 
 Скачать можно вот здесь https://visualvm.github.io/
 
-Запускается командой вида: ` C:\Users\Ivan\Documents\visualvm_22\bin\visualvm.exe --jdkhome "C:\Program Files\Java\jdk-17.0.1" --userdir "C:\Users\Ivan"`
+Запускается командой вида: `C:\Users\Ivan\Documents\visualvm_22\bin\visualvm.exe --jdkhome "C:\Program Files\Java\jdk-17.0.1" --userdir "C:\Users\Ivan"`
 
 В существующий docker-compose для app добавлена конфигурация портов 9091,
 чтобы подключиться необходимо `Add JMX Connection`, конфигурация `localhost:9010`, аунтификация и ssl отключены.
