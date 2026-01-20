@@ -1,3 +1,17 @@
+## Сборка
+`gradle build`
+
+## Запуск
+
+### Предварительно надо выставить следущие переменные окружения
+`DB_URL`
+`DB_USERNAME`
+`DB_PASSWORD`
+`SERVER_PORT`
+
+`java -jar ./build/lib/MPI-0.0.1-SNAPSHOT.jar`
+или `gradle bootRun`
+
 ## Профилирование удалённого (docker) ресурса
 Производится с помощью visualvm
 
